@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:p="http://www.springframework.org/schema/p"
+       xmlns:mvc="http://www.springframework.org/schema/mvc"
+       xmlns:tx="http://www.springframework.org/schema/tx"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xsi:schemaLocation="
+        http://www.springframework.org/schema/beans
+        http://www.springframework.org/schema/beans/spring-beans.xsd
+        http://www.springframework.org/schema/context
+        http://www.springframework.org/schema/context/spring-context.xsd
+        http://www.springframework.org/schema/mvc
+        http://www.springframework.org/schema/mvc/spring-mvc.xsd
+        http://www.springframework.org/schema/tx
+        http://www.springframework.org/schema/tx/spring-tx.xsd">
+
+    <!--加载属性文件-->
+    <context:property-placeholder location="classpath:jdbc.properties"/>
+    <!--1 扫描包-->
+    <context:component-scan base-package="com.pro"/>
+    <!--2 springmvc对注解的支持-->
+    <mvc:annotation-driven/>
+    <!--3 静态资源排序 除了使用tomcat自动的default的 servlet处理-->
+    <mvc:default-servlet-handler/>
+    <!--freemarker配置-->
+    <bean class="org.springframework.web.servlet.view.freemarker.FreeMarkerConfigurer">
+        <property name="templateLoaderPath" value="/WEB-INF/ftl"/>
+        <property name="freemarkerSettings">
+            <props><!--数据和模板渲染时的编码设置-->
+                <prop key="defaultEncoding">UTF-8</prop>
+            </props>
+        </property>
+        <!--使用classpath下的文件优先-->
+        <property name="preferFileSystemAccess" value="false"/>
+    </bean>
+    <bean class="org.springframework.web.servlet.view.freemarker.FreeMarkerViewResolver">
+        <!--设置freemarker 响应时的编码-->
+        <property name="contentType" value="text/html;charset=utf-8"/>
+        <property name="suffix" value=".ftl"/>
+    </bean>
+
+    <!--mybatis交给spring来管理，所以他的这些个配置要写在这里了-->
+    <!--配置数据源-->
+    <bean id="dataSource" class="com.alibaba.druid.pool.DruidDataSource">
+        <property name="driverClassName" value="${jdbc.driver}"/>
+        <property name="url" value="${jdbc.url}"/>
+        <property name="username" value="${jdbc.username}"/>
+        <property name="password" value="${jdbc.password}"/>
+        <property name="initialSize" value="${jdbc.initialSize}"/>
+        <property name="maxActive" value="${jdbc.maxActive}"/>
+    </bean>
+
+    <!--<bean id="sqlSessionFactory" class="org.mybatis.spring.SqlSessionFactoryBean">-->
+    <bean id="sqlSessionFactory" class="com.baomidou.mybatisplus.extension.spring.MybatisSqlSessionFactoryBean">
+        <!--配置数据源-->
+        <property name="dataSource" ref="dataSource"/>
+        <!--这个是映射文件所在地 xml-->
+        <property name="mapperLocations" value="classpath:mapper/*.xml"/>
+        <property name="configLocation" value="classpath:mybatis-config.xml"/>
+        <property name="typeAliasesPackage" value="=com.pro.domain"/>
+    </bean>
+
+    <bean class="org.mybatis.spring.mapper.MapperScannerConfigurer">
+        <!--指向的我们在哪个包里面，写的dao接口，因为没有实现类，实现类就是被xml文件替代了
+        我们要将这个包下面的接口，生成代理类-->
+        <property name="basePackage" value="com.pro.dao"/>
+    </bean>
+
+    <!--加上事务管理器-->
+    <bean id="transactionManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+        <property name="dataSource" ref="dataSource"/>
+    </bean>
+    <!--开启注解事务-->
+    <tx:annotation-driven transaction-manager="transactionManager"/>
+
+    <!--配置kaptcha-->
+    <bean id="defaultKaptcha" class="com.google.code.kaptcha.impl.DefaultKaptcha">
+        <property name="config">
+            <bean class="com.google.code.kaptcha.util.Config">
+                <constructor-arg><!--构造函数-->
+                    <props>
+                        <!--边框-->
+                        <prop key="kaptcha.border">no</prop>
+                        <!--宽度120px-->
+                        <prop key="kaptcha.image.width">120</prop>
+                        <!--颜色-->
+                        <prop key="kaptcha.textproducer.font.color">pink</prop>
+                        <!--大小-->
+                        <prop key="kaptcha.textproducer.font.size">40</prop>
+                        <!--几个字符-->
+                        <prop key="kaptcha.textproducer.char.length">4</prop>
+                    </props>
+                </constructor-arg>
+            </bean>
+        </property>
+    </bean>
+</beans>
